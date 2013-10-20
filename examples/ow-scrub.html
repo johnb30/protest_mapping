@@ -3,24 +3,11 @@
 <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-    <title>GDELT Protest Data Over Time</title>
+    <title>CartoDB + Time</title>
     <link rel="shortcut icon" href="http://cartodb.com/favicon/favicon_32x32.ico" />
     <link href="http://code.google.com/apis/maps/documentation/javascript/examples/default.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css">
-    <link rel="stylesheet" href="examples/vendor/codemirror.css">
     <style>
-       a.cartodb_logo {
-            background: url("http://cartodb.s3.amazonaws.com/embed/embed_sprite.png") no-repeat scroll -61px 0 rgba(0, 0, 0, 0);
-            bottom: 8px;
-            display: block;
-            font-size: 0;
-            height: 27px;
-            left: 10px;
-            line-height: 0;
-            position: absolute;
-            text-indent: -9999px;
-            width: 69px;
-        }
         #torque-slider {
             position:absolute;
             bottom:18px;
@@ -38,12 +25,12 @@
             border-radius: 3px;
             cursor: pointer;
             background-color: white; 
-            background-image: url(img/play.png);
+            background-image: url(../img/play.png);
             background-repeat:no-repeat; 
             background-position:center;
         }
         #torque-pause.playing {
-          background-color: white; background-image: url(img/pause.png); background-repeat:no-repeat; background-position:center; 
+          background-color: white; background-image: url(../img/pause.png); background-repeat:no-repeat; background-position:center; 
         }
 
         #torque-time {
@@ -54,99 +41,25 @@
           font-size: 31px;
           font-family: Georgia, serif;
         }
-
-        body, #map_canvas {
-          height: 100%;
-        }
     </style>
   </head>
 
   <body>
     <div id="map_canvas"></div>
-    <textarea id="code"></textarea>
     <div id="torque-slider"></div>
     <a id="torque-pause" class="playing"></a>
     <div id="torque-time"></div>
     <a class="cartodb_logo" href="http://www.cartodb.com" target="_blank">CartoDB</a>
 
-    <script id="default-style" type="text/torque-cartocss">
-#layer {
-  marker-width: 4; 
-  marker-fill: #FEE391; 
-  [value > 2] { marker-fill: #FEC44F; }
-  [value > 3] { marker-fill: #FE9929; }
-  [value > 4] { marker-fill: #EC7014; }
-  [value > 5] { marker-fill: #CC4C02; }
-  [value > 6] { marker-fill: #993404; }
-  [value > 7] { marker-fill: #662506; }
-  [frame-offset = 1] {
-    marker-width: 5;
-    marker-fill-opacity: 0.05;
-  }
-  [frame-offset = 2] { 
-    marker-width: 10;
-    marker-fill-opacity: 0.02;
-  }
-}
-    </script>
-
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script type="text/javascript" src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
-    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false&v=3.12"></script>
-    <script src="vendor/leaflet.js"></script>
-    <script src="vendor/underscore.js"></script>
-    <script src="vendor/carto.js"></script>
-    <script src="examples/vendor/codemirror.js"></script>
-    <script src="examples/vendor/css.js"></script>
-
-    <script src="dist/torque.uncompressed.js"></script>
-
-    <script type="text/javascript" src="examples/vendor/dat.gui.min.js"></script>
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script src="../vendor/leaflet.js"></script>
+    <script src="../vendor/underscore.js"></script>
+    <script src="../vendor/carto.js"></script>
+    <script src="../dist/torque.uncompressed.js"></script>
 
     <script type="text/javascript">
-
-        var torqueLayer;
-        var ui;
-        var state = location.hash ? JSON.parse(atob(location.hash.substring(1))): {};
-        var DEFAULT_CARTOCSS = state.cartocss || $('#default-style').html();
-
-        function init_torque(map, options) {
-          // init torque layer
-          torqueLayer = new torque.GMapsTorqueLayer(_.extend({
-            user       : 'johnb30',
-            table      : 'protest_data',
-            column     : 'date',
-            countby    : 'count(count)',
-            resolution: 8,
-            steps: 879,
-            blendmode  : 'xor',
-            animationDuration: 120,
-            map: map
-          }, options));
-
-
-          torqueLayer.setMap(map);
-          torqueLayer.setCartoCSS(DEFAULT_CARTOCSS);
-
-          init_slider(torqueLayer);
-          torqueLayer.on('change:bounds', function(changes) {
-              var bounds = changes.bounds;
-              var b = new google.maps.LatLngBounds(
-                new google.maps.LatLng(
-                    bounds[0][0],
-                    bounds[0][1]
-                ),
-                new google.maps.LatLng(
-                  bounds[1][0],
-                  bounds[1][1]
-                )
-              )
-              map.fitBounds(b);
-          });
-          torqueLayer.play();
-        }
-
-
       /**
        * inits slider and a small play/pause button
        */
@@ -168,6 +81,7 @@
           $("#torque-slider" ).slider({ value: changes.step });
           var month_year = changes.time.toString().substr(4).split(' ');
           torqueTime.text(month_year[0] + " - " + month_year[2]);
+          console.log(torqueLayer.getTime());
         });
 
         // play-pause toggle
@@ -177,16 +91,15 @@
         });
       };
 
-
     function initialize() {
 
       // initialise the google map
       var map = new google.maps.Map(document.getElementById('map_canvas'), {
-        center: new google.maps.LatLng(37.82070064677705, -122.42739200592041),
-        zoom: 13,
+        center: new google.maps.LatLng(30.95940879245423, -0.609375),
+        zoom: 2,
         mapTypeId: google.maps.MapTypeId.SATELLITE,
         mapTypeControl: false,
-        minZoom: 2
+        minZoom: 1
       });
 
       // dark map style
@@ -200,10 +113,39 @@
       map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
       map.setOptions({ styles: gmaps_style });
 
+      // init torque layer
+      var torqueLayer = new torque.GMapsTorqueLayer({
+        user       : 'viz2',
+        table      : 'ow',
+        column     : 'date',
+        countby    : 'count(cartodb_id)',
+        steps: 750,
+        blendmode  : 'lighter',
+        animationDuration: 60,
+        map: map
+      });
 
+      var DEFAULT_CARTOCSS = [
+      '#layer {',
+      "  marker-width: 3; ",
+      '  marker-fill: #FEE391; ',
+      '  [value > 2] { marker-fill: #FEC44F; }',
+      '  [value > 3] { marker-fill: #FE9929; }',
+      '  [value > 4] { marker-fill: #EC7014; }',
+      '  [value > 5] { marker-fill: #CC4C02; }',
+      '  [value > 6] { marker-fill: #993404; }',
+      '  [value > 7] { marker-fill: #662506; }',
+      '  [frame-offset = 1] {  marker-width: 8;marker-fill-opacity: 0.05;}',
+      '  [frame-offset = 2] {  marker-width: 20;marker-fill-opacity: 0.02;}',
+      //'  [frame-offset = 1] {  marker-width: 25;marker-fill-opacity: 0.01;}',
+      '}'
+      ].join('\n');
 
-      init_torque(map, state.options);
+      torqueLayer.setMap(map);
+      torqueLayer.setCartoCSS(DEFAULT_CARTOCSS);
 
+      init_slider(torqueLayer);
+      torqueLayer.play();
 
     }
 
